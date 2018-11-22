@@ -20,6 +20,7 @@ limitations under the License.
 
 from __future__ import division
 import tensorflow as tf
+from keras.losses import mean_squared_error
 
 
 class SSDLossContinuous:
@@ -76,10 +77,6 @@ class SSDLossContinuous:
         square_loss = 0.5 * (y_true - y_pred)**2
         l1_loss = tf.where(tf.less(absolute_loss, 1.0), square_loss, absolute_loss - 0.5)
         return tf.reduce_sum(l1_loss, axis=-1)
-
-    def L2_loss(self, y_true, y_pred):
-        square_loss = 0.5 * (y_true - y_pred)**2
-        return tf.reduce_sum(square_loss, axis=-1)
 
     def log_loss(self, y_true, y_pred):
         '''
@@ -140,7 +137,7 @@ class SSDLossContinuous:
         # 1: Compute the losses for class and box predictions for every box.
 
         classification_loss = tf.to_float(self.log_loss(y_true[:,:,:n_classes], y_pred[:,:,:n_classes])) # Output shape: (batch_size, n_boxes)
-        clabel_loss = tf.to_float(self.L2_loss(y_true[:,:,n_classes:-12], y_pred[:,:,n_classes:-12]))
+        clabel_loss = tf.to_float(mean_squared_error(y_true[:,:,n_classes:-12], y_pred[:,:,n_classes:-12]))
         localization_loss = tf.to_float(self.smooth_L1_loss(y_true[:,:,-12:-8], y_pred[:,:,-12:-8])) # Output shape: (batch_size, n_boxes)
 
         # 2: Compute the classification losses for the positive and negative targets.
