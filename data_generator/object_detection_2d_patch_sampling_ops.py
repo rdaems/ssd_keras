@@ -532,7 +532,7 @@ class RandomPatch:
                 self.sample_patch.patch_height = patch_height
                 self.sample_patch.patch_width = patch_width
 
-                if (labels is None) or (self.image_validator is None):
+                if (labels is None) or labels.shape == 0 or (self.image_validator is None):
                     # We either don't have any boxes or if we do, we will accept any outcome as valid.
                     return self.sample_patch(image, labels, return_inverter)
                 else:
