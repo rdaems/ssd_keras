@@ -31,7 +31,8 @@ class SSDLossContinuous:
     def __init__(self,
                  neg_pos_ratio=3,
                  n_neg_min=0,
-                 alpha=1.0):
+                 alpha=1.0,
+                 beta=1.0):
         '''
         Arguments:
             neg_pos_ratio (int, optional): The maximum ratio of negative (i.e. background)
@@ -53,6 +54,7 @@ class SSDLossContinuous:
         self.neg_pos_ratio = neg_pos_ratio
         self.n_neg_min = n_neg_min
         self.alpha = alpha
+        self.beta = beta
 
     def smooth_L1_loss(self, y_true, y_pred):
         '''
@@ -212,7 +214,7 @@ class SSDLossContinuous:
 
         # 4: Compute the total loss.
 
-        total_loss = (class_loss + pos_clabel_loss + self.alpha * loc_loss) / tf.maximum(1.0, n_positive) # In case `n_positive == 0`   # todo: weight of clabel loss?
+        total_loss = (class_loss + self.beta * pos_clabel_loss + self.alpha * loc_loss) / tf.maximum(1.0, n_positive) # In case `n_positive == 0`   # todo: weight of clabel loss?
         # Keras has the annoying habit of dividing the loss by the batch size, which sucks in our case
         # because the relevant criterion to average our loss over is the number of positive boxes in the batch
         # (by which we're dividing in the line above), not the batch size. So in order to revert Keras' averaging
