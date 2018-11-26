@@ -73,7 +73,7 @@ class ToyDataGenerator:
 def show(x, y, show=False, to_file=None):
     out_scale = 32
     img = (x + 0.5) * 255
-    img *= 0.8 # dim
+    # img *= 0.8 # dim
     img = np.clip(img, 0, 255).astype(np.uint8)
     img = cv2.resize(img, None, fx=out_scale, fy=out_scale, interpolation=cv2.INTER_NEAREST)
     for _, _, r, g, b, xmin, ymin, xmax, ymax in y:
@@ -148,7 +148,7 @@ class ValCallback(Callback):
         super().__init__()
 
     def on_epoch_end(self, epoch, logs=None):
-        x, y = self.data_generator.random_data(seed=42)
+        x, y = self.data_generator.random_data(seed=None)
         y_pred = self.model.predict(x[np.newaxis, :])
 
         # for a in y_pred[0, :, 10]:
