@@ -84,15 +84,16 @@ class Resize:
             else:
                 return image
         else:
-            labels = np.copy(labels)
-            labels[:, [ymin, ymax]] = np.round(labels[:, [ymin, ymax]] * (self.out_height / img_height), decimals=0)
-            labels[:, [xmin, xmax]] = np.round(labels[:, [xmin, xmax]] * (self.out_width / img_width), decimals=0)
+            if not labels.shape[0] == 0:
+                labels = np.copy(labels)
+                labels[:, [ymin, ymax]] = np.round(labels[:, [ymin, ymax]] * (self.out_height / img_height), decimals=0)
+                labels[:, [xmin, xmax]] = np.round(labels[:, [xmin, xmax]] * (self.out_width / img_width), decimals=0)
 
-            if not (self.box_filter is None):
-                self.box_filter.labels_format = self.labels_format
-                labels = self.box_filter(labels=labels,
-                                         image_height=self.out_height,
-                                         image_width=self.out_width)
+                if not (self.box_filter is None):
+                    self.box_filter.labels_format = self.labels_format
+                    labels = self.box_filter(labels=labels,
+                                             image_height=self.out_height,
+                                             image_width=self.out_width)
 
             if return_inverter:
                 return image, labels, inverter

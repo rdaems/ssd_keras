@@ -1,10 +1,12 @@
 import numpy as np
 import cv2
 
+import tensorflow as tf
 from keras.layers import Input, Conv2D, MaxPool2D, BatchNormalization, Reshape, Activation, Concatenate
 from keras import Model
 from keras.optimizers import Adam
-from keras.callbacks import Callback
+from keras.callbacks import Callback, TensorBoard
+import keras.backend as K
 
 from ssd_encoder_decoder.ssd_input_encoder_continuous import SSDInputEncoderContinuous
 from ssd_encoder_decoder.ssd_output_decoder_continuous import decode_detections
@@ -167,6 +169,35 @@ class ValCallback(Callback):
         show(x, y_pred_decoded[0], show=False, to_file='val_output/{:02d}.bmp'.format(epoch))
 
 
+class TensorBoardExtra(TensorBoard):
+    def __init__(self, extra_logs, **kwargs):
+        super(TensorBoardExtra, self).__init__(**kwargs)
+        self.extra_logs = extra_logs
+
+    def _write_logs(self, logs, index):
+        for name, value in logs.items():
+            if name in ['batch', 'size']:
+                continue
+            summary = tf.Summary()
+            summary_value = summary.value.add()
+            if isinstance(value, np.ndarray):
+                summary_value.simple_value = value.item()
+            else:
+                summary_value.simple_value = value
+            summary_value.tag = name
+            self.writer.add_summary(summary, index)
+        self.writer.flush()
+
+
+class SummaryCallback:
+    def __init__(self, extra_logs, log_dir='logs'):
+        self.extra_logs = extra_logs
+        self.session = K.get_session()
+
+    def on_epoch_end(self, epoch, logs=None):
+        summary = self.session.run(self.merged, feed_dict={self.lr_ph: self._get_lr()})
+
+
 if __name__ == '__main__':
     img_width = 16
     img_height = 16
@@ -192,7 +223,7 @@ if __name__ == '__main__':
     # model.summary()
 
     adam = Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.01)
-    ssd_loss = SSDLossContinuous(neg_pos_ratio=3, alpha=1.0)
+    ssd_loss = SSDLossContinuous(neg_pos_ratio=3, alpha=1.0, beta=1.0)
     model.compile(optimizer=adam, loss=ssd_loss.compute_loss)
 
     ssd_input_encoder = SSDInputEncoderContinuous(img_height, img_width, n_classes, n_clabels, predictor_sizes,
@@ -203,6 +234,16 @@ if __name__ == '__main__':
     # print(x.shape)
     # print(y.shape)
 
-    val_callback = ValCallback(dg)
+    import shutil
+    try:
+        shutil.rmtree('logs')
+    except:
+        pass
 
-    model.fit_generator(dg.generate(batch_size, ssd_input_encoder), steps_per_epoch=n_steps, epochs=n_epochs, callbacks=[val_callback])
+    val_callback = ValCallback(dg)
+    # tensorboard_callback = TensorBoardExtra(extra_logs=['classification_loss', 'clabel_loss', 'localization_loss'])
+    summary_callback = SummaryCallback(logs=['classification_loss', 'clabel_loss', 'localization_loss'])
+    callbacks = [val_callback, summary_callback]
+
+
+    model.fit_generator(dg.generate(batch_size, ssd_input_encoder), steps_per_epoch=n_steps, epochs=n_epochs, callbacks=callbacks)

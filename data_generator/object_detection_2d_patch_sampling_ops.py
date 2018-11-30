@@ -321,20 +321,21 @@ class CropPad:
 
         if not (labels is None):
 
-            # Translate the box coordinates to the patch's coordinate system.
-            labels[:, [ymin, ymax]] -= patch_ymin
-            labels[:, [xmin, xmax]] -= patch_xmin
+            if not labels.shape[0] == 0:
+                # Translate the box coordinates to the patch's coordinate system.
+                labels[:, [ymin, ymax]] -= patch_ymin
+                labels[:, [xmin, xmax]] -= patch_xmin
 
-            # Compute all valid boxes for this patch.
-            if not (self.box_filter is None):
-                self.box_filter.labels_format = self.labels_format
-                labels = self.box_filter(labels=labels,
-                                         image_height=self.patch_height,
-                                         image_width=self.patch_width)
+                # Compute all valid boxes for this patch.
+                if not (self.box_filter is None):
+                    self.box_filter.labels_format = self.labels_format
+                    labels = self.box_filter(labels=labels,
+                                             image_height=self.patch_height,
+                                             image_width=self.patch_width)
 
-            if self.clip_boxes:
-                labels[:,[ymin,ymax]] = np.clip(labels[:,[ymin,ymax]], a_min=0, a_max=self.patch_height-1)
-                labels[:,[xmin,xmax]] = np.clip(labels[:,[xmin,xmax]], a_min=0, a_max=self.patch_width-1)
+                if self.clip_boxes:
+                    labels[:,[ymin,ymax]] = np.clip(labels[:,[ymin,ymax]], a_min=0, a_max=self.patch_height-1)
+                    labels[:,[xmin,xmax]] = np.clip(labels[:,[xmin,xmax]], a_min=0, a_max=self.patch_width-1)
 
             if return_inverter:
                 return image, labels, inverter
